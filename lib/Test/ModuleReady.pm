@@ -16,7 +16,7 @@ Test::ModuleReady - Simple module for checking that a module is ready for submis
 
 =head1 VERSION
 
-This document describes Test::ModuleReady version 0.0.1
+This document describes Test::ModuleReady version 0.0.2
 
 =cut
 
@@ -152,7 +152,7 @@ Generates a hash of dirs to contents as (output generated using L<Data::TreeDraw
 # close the sub dir handles immediately when you don´t need them
 # open MANIFEST only when needed?!?
 
-use version; $VERSION = qv('0.0.1');
+use version; $VERSION = qv('0.0.2');
 
 # need a thing that 
 
@@ -553,8 +553,9 @@ sub tar {
     $tar_name =~ s/\//-/g;
     #my $final = qq{$tar_name-$version};
     my $final = $tar_name.q{-}.$version;
-    print qq{\n[*] Creating tar: tar czf ../$tar_name-$version.tar.gz .};
-    system qq{tar czf ../$tar_name-$version.tar.gz .} and croak qq{\nProblem creating tar file};
+    print qq{\n[*] Creating tar: tar czf ../$tar_name-$version.tar.gz ../$tar_name};
+    #system qq{tar czf ../$tar_name-$version.tar.gz .} and croak qq{\nProblem creating tar file};
+    system qq{tar czf ../$tar_name-$version.tar.gz ../$tar_name} and croak qq{\nProblem creating tar file};
     return $final;
     # tar_czf_name-0.0.1.tar.gz_dir
 }
@@ -769,7 +770,7 @@ Let me know.
 =head1 TO DO
 
 Add a test to make sure that non-standard modules used in the module are declared as dependencies in the Makefile.PL.
-Have a options to skip steps.
+Have a options to skip steps. Use a more powerful tar mechanism.
 
 =head1 AUTHOR
 
