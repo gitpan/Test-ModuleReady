@@ -1,4 +1,4 @@
-Test-ModuleReady version 0.0.2
+Test-ModuleReady version 0.0.3
 
 This module was written to help me prepare updates to modules. I have a nasty habit of over-looking tedious things like
 checking that the version numbers in the README, POD and $VERSION variable in the module file are all equal. Also not

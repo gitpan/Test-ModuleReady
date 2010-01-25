@@ -16,7 +16,7 @@ Test::ModuleReady - Simple module for checking that a module is ready for submis
 
 =head1 VERSION
 
-This document describes Test::ModuleReady version 0.0.2
+This document describes Test::ModuleReady version 0.0.3 
 
 =cut
 
@@ -152,7 +152,7 @@ Generates a hash of dirs to contents as (output generated using L<Data::TreeDraw
 # close the sub dir handles immediately when you don´t need them
 # open MANIFEST only when needed?!?
 
-use version; $VERSION = qv('0.0.2');
+use version; $VERSION = qv('0.0.3');
 
 # need a thing that 
 
@@ -192,6 +192,8 @@ sub module_ready {
     #y iterate through all dirs in hash and their anon array values
     #while ( my ($k, $v) = each %hasherton ) { &_check_dir($v,$k,$man); }
     while ( my ($k, $v) = each %hasherton ) { &_check_dir($v,$k); }
+
+    print qq{\nThere were no missing or excess files.} if $count == 1;
 
     &_wait(q{to perform dependency check on Makefile.PL and Build.PL});
     &_check_dependencies($module, $module_name);
@@ -601,11 +603,11 @@ sub _check_pod_syntax {
 
 sub _wait {
     my $mes = shift;
-    print qq{\n\nPress carriage return $mes and \x27n\x27 carriage return to exit? };
+    print qq{\n\nPress carriage return $mes and \x27q\x27 carriage return to exit? };
     while ( my $wait = <STDIN> ) {
         chomp $wait;
         last if $wait eq q{};
-        exit if $wait eq q{n};
+        exit if $wait eq q{q};
     }
 }
 
