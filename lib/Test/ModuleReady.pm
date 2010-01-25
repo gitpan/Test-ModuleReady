@@ -16,7 +16,7 @@ Test::ModuleReady - Simple module for checking that a module is ready for submis
 
 =head1 VERSION
 
-This document describes Test::ModuleReady version 0.0.3 
+This document describes Test::ModuleReady version 0.0.4
 
 =cut
 
@@ -75,7 +75,7 @@ Just continue...
 This module was written to help me prepare updates to modules. I have a nasty habit of over-looking tedious things like
 checking that the version numbers in the README, POD and $VERSION variable in the module file are all equal. Also not
 only checking that all the files listed in the MANIFEST but more importantly checking that I haven´t left old .svn
-repositories, .Rhistory files Vim .swp files ect. have all been deleted. This modules is aimed at addressing these and
+repositories, .Rhistory files Vim .swp files etc. have all been deleted. This modules is aimed at addressing these and
 other house-keeping chores just before submitting a new module release.
 
     This module:
@@ -88,10 +88,11 @@ other house-keeping chores just before submitting a new module release.
         in Makefile.PL and Build.PL making sure you do not forget to include important dependencies. Specifically, for
         every 'use' statement found it prints whether or not it found the appropriate dependency in the PREREQ_PM or
         requires hashes for Makefile.PL and Build.PL respectively.
-    (4) Runs POD syntax checking using the Pod::Checker module.
-    (5) Prompts you for words to ignore before running spell-check using Test::Spelling/Test::More modules.
-    (6) Checks the Module.pm syntax using the basic Perl interpreter syntax check.
-    (7) Finally if you're happy with the results it tars the whole thing into a tar file with the full module name
+    (4) Extracts POD sections and checks the length of verbatim sections to make sure they do not have excessing length.
+    (5) Runs POD syntax checking using the Pod::Checker module.
+    (6) Prompts you for words to ignore before running spell-check using Test::Spelling/Test::More modules.
+    (7) Checks the Module.pm syntax using the basic Perl interpreter syntax check.
+    (8) Finally if you're happy with the results it tars the whole thing into a tar file with the full module name
         appended by the version number from the $VERSION variable.
 
 This module does not recurse into the working directory and consequently if you choose to keep an excess directory it will totally
@@ -152,7 +153,7 @@ Generates a hash of dirs to contents as (output generated using L<Data::TreeDraw
 # close the sub dir handles immediately when you don´t need them
 # open MANIFEST only when needed?!?
 
-use version; $VERSION = qv('0.0.3');
+use version; $VERSION = qv('0.0.4');
 
 # need a thing that 
 
@@ -193,10 +194,13 @@ sub module_ready {
     #while ( my ($k, $v) = each %hasherton ) { &_check_dir($v,$k,$man); }
     while ( my ($k, $v) = each %hasherton ) { &_check_dir($v,$k); }
 
-    print qq{\nThere were no missing or excess files.} if $count == 1;
+    print qq{\n[*] There were no missing or excess files.} if $count == 1;
 
     &_wait(q{to perform dependency check on Makefile.PL and Build.PL});
-    &_check_dependencies($module, $module_name);
+    my @lines = &_check_dependencies($module, $module_name);
+
+    &_wait(q{to check line length in verbatim sections of POD});
+    &_check_verbatim(@lines);
 
     &_wait(q{to perform POD syntax check});
     &_check_pod_syntax($module, 2);
@@ -672,7 +676,7 @@ sub _check_versions {
 #=fe
 
     if ($version eq $readme_version and $version eq $pod_version) { print qq{\n\n[*] Version numbers in Module \$VERSION variable, POD and README match} }
-    else { print qq{\n\n[*] Version numbers in \$VERSION variable, POD and README do not match}; }
+    else { print qq{\n\n[*] PROBLEM: Version numbers in \$VERSION variable, POD and README do not match}; }
 
     return ($module, $module_name, $module_dir, $version);
 }
@@ -697,7 +701,8 @@ sub _check_dependencies {
 
     #for my $i (@modules) {print qq{\n[*] Module requires $i}; }
 
-    return;
+    # return;
+    return @lines;
 }
 
 sub slurp_deps {
@@ -749,6 +754,65 @@ sub _search_deps {
     return;
 }
 
+sub _check_verbatim {
+    my @lines = @_;
+
+    my $file_slurped;
+
+    #y sick of this let´s just put the line number into the actual array lines - could sub it out (but why)
+    #for (@lines) { $file_slurped .= $_ }
+    for (0..$#lines) { my $r = $_+1; $file_slurped .= q{[line: }.$r.q{]: }.$lines[$_] }
+    #print $file_slurped;
+    my @pods;
+    
+    #y non-greedy matching!?!
+    while ($file_slurped =~ /=head(.+?)=cut\s*/xmsg) { push @pods, $1 }
+     
+    #print qq{\nhere }, scalar @pods;
+
+    my $flag = 0;
+
+    for my $entry (@pods) {
+        my @entry_lines= split qq{\n}, $entry; 
+        for my $line (@entry_lines) { 
+            #if (length $line > 100) {
+            if (length $line > 150 && $line =~ /\A\[line:\s\d{0,4}\]:\s+/) {
+                
+                #my $position = &_line_number(\@lines,$line);
+                print qq{\n[*] Possbile long-line in POD verbatim section\n$line\n};
+                $flag = 1;
+                #if ($position == -1) { print qq{(problem finding line number):}; }
+                #if ($position != -1) { print qq{ at line $position:};}
+                #else { print qq{:} }
+                #print qq{ \x27$line\x27\n};
+            }
+        }
+    }
+
+    print qq{\n[*] Line length of POD verbatim section seems okay.\n} if $flag == 0;
+    return;
+}
+
+
+#sub _line_number {
+#    my ($list_ref, $match) = @_;
+#    #y need to compile once to speed things up and no x option! - non o here!!!
+#    #for my $i (0.. $#{$list_ref}) { return $i if ($list_ref->[$i] =~ /$match/oms); print qq{\n\nhere $i: \x27$match\x27\nhere $i: \x27$list_ref->[$i]\x27}; }
+#      
+#    for my $i (0.. $#{$list_ref}) {
+#        my $r = $i+1; 
+#        #print qq{\ntesting\n$list_ref->[$i]\n$match\n}; 
+#        my $test = $list_ref->[$i];
+#        chomp $test;
+#        $match =~ s/\A\s*//;
+#        # return $r if ($list_ref->[$i] =~ /$match/ms); }
+#        
+#
+#        return $r if ($test =~ /$match/); }
+#    #for my $i (0.. $#{$list_ref}) { chomp $i; return $i if ($list_ref->[$i] eq $match); }
+#    return -1;
+#}
+
 # open(F, '>/dev/null');
 # *STDOUT = *F;
 
@@ -771,8 +835,7 @@ Let me know.
 
 =head1 TO DO
 
-Add a test to make sure that non-standard modules used in the module are declared as dependencies in the Makefile.PL.
-Have a options to skip steps. Use a more powerful tar mechanism.
+Have a options to skip steps. Use a more powerful tar mechanism. Extract POD using proper module tools and not regexps.
 
 =head1 AUTHOR
 
