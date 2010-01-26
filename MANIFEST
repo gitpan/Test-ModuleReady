@@ -4,5 +4,4 @@ MANIFEST
 Makefile.PL
 README
 lib/Test/ModuleReady.pm
-t/00.load.t
 t/pod.t

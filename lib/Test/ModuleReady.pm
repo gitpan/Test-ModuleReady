@@ -1,4 +1,10 @@
 package Test::ModuleReady;
+use strict; 
+use warnings;
+use Carp;
+use Pod::Checker;    
+use Test::More tests => 1;    
+use Test::Spelling;
 
 # add croak on all closes too
 
@@ -16,7 +22,7 @@ Test::ModuleReady - Simple module for checking that a module is ready for submis
 
 =head1 VERSION
 
-This document describes Test::ModuleReady version 0.0.4
+This document describes Test::ModuleReady version 0.0.5
 
 =cut
 
@@ -153,18 +159,7 @@ Generates a hash of dirs to contents as (output generated using L<Data::TreeDraw
 # close the sub dir handles immediately when you don´t need them
 # open MANIFEST only when needed?!?
 
-use version; $VERSION = qv('0.0.4');
-
-# need a thing that 
-
-# package Test::ModuleReady
-# package Check::ModuleReady
-use strict; 
-use warnings;
-use Carp;
-use Pod::Checker;    
-use Test::More tests => 1;    
-use Test::Spelling;
+use version; our $VERSION = qv('0.0.5');
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -685,7 +680,7 @@ sub _check_dependencies {
     
     my ($module, $module_name) = @_;
 
-    open my $fh, q{<}, $module or croak qq{\n[*] There is a problem opening};
+    open my $fh, q{<}, $module or croak qq{\n[*] There is a problem opening $module};
     my @lines = <$fh>;
     close $fh or croak;
 
@@ -715,7 +710,7 @@ sub slurp_deps {
     @modules = &_array_difference([q{warnings},q{strict},$module_name],\@modules);
 
 
-    open my $fh, q{<}, $which or croak qq{\n[*] There is a problem opening};
+    open my $fh, q{<}, $which or croak qq{\n[*] There is a problem opening $which};
     my $slurp_readme = do { local $/; <$fh> };
     close $fh or croak qq{Problem closing file};;
 
