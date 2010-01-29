@@ -22,7 +22,7 @@ Test::ModuleReady - Simple module for checking that a module is ready for submis
 
 =head1 VERSION
 
-This document describes Test::ModuleReady version 0.0.5
+This document describes Test::ModuleReady version 0.0.6
 
 =cut
 
@@ -82,7 +82,8 @@ This module was written to help me prepare updates to modules. I have a nasty ha
 checking that the version numbers in the README, POD and $VERSION variable in the module file are all equal. Also not
 only checking that all the files listed in the MANIFEST but more importantly checking that I haven´t left old .svn
 repositories, .Rhistory files Vim .swp files etc. have all been deleted. This modules is aimed at addressing these and
-other house-keeping chores just before submitting a new module release.
+other house-keeping chores just before submitting a new module release (of course you can just use perl Build.PL;
+./Build dist to avoid some of these issues).
 
     This module:
 
@@ -98,8 +99,8 @@ other house-keeping chores just before submitting a new module release.
     (5) Runs POD syntax checking using the Pod::Checker module.
     (6) Prompts you for words to ignore before running spell-check using Test::Spelling/Test::More modules.
     (7) Checks the Module.pm syntax using the basic Perl interpreter syntax check.
-    (8) Finally if you're happy with the results it tars the whole thing into a tar file with the full module name
-        appended by the version number from the $VERSION variable.
+    (8) Runs: perl Build.pl; ./Build disttest to use Builds much superior testing facilities and generate the META.yml.
+    (9) If your happy with the results it runs: ./Build dist to generate the tar file.
 
 This module does not recurse into the working directory and consequently if you choose to keep an excess directory it will totally
 ignore everything below. Instead the module takes the MANIFEST file contents and generates a hash of directories as keys
@@ -159,7 +160,7 @@ Generates a hash of dirs to contents as (output generated using L<Data::TreeDraw
 # close the sub dir handles immediately when you don´t need them
 # open MANIFEST only when needed?!?
 
-use version; our $VERSION = qv('0.0.5');
+use version; our $VERSION = qv('0.0.6');
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -203,21 +204,12 @@ sub module_ready {
     &_check_pod_spelling($module);
     &_wait(q{to perform check module syntax});
     &_check_module_syntax($module);
-    &_wait(q{to tar the module with its version number});
-
-    # do name import on the pm file - i.e. run import sub or use - can check both syntax - but that should be done with
-    # separate syntax check: perl -c?!? but can grab the Global variable $VERSION - check that against readme - if there is
-    # one and version pod... then uses that to tar 
-
-    #r/ check all files compile correctly - or just the module
-    # Test::Compile - Check whether Perl module files compile correctly
-    # Can specify a list of files to check, using the all_pm_files() function supplied:
-
-    #r/ run copy and run perl Makefile.PL and make disttest then remove and give result - i.e. may be possible to check system output or need to regexp
-
-    #r/ do spell check on module pod - and just output problems - then pause and ask for reader input about tar-ing
-
-    my $tar = &tar($module,$version);
+    #&_wait(q{to tar the module with its version number});
+    #my $tar = &tar($module,$version);
+    &_wait(q{to run perl Build.PL and ./Build disttest to test the dist and generate META.yml});
+    &build();
+    &_wait(q{to tar the module using ./Build dist});
+    &tar();
 
     $count = 1; # package-scoped so need to manually re-cycle value
     #close $man;
@@ -541,24 +533,36 @@ sub _generate_hash {
     return %hasherton;
 }
 
-sub tar {
-    my ($tar_name, $version) = @_;
-    print qq{\n------------------------------------------------------------\nCREATING TAR\n};
-    chomp $version;
-    chomp $tar_name;
+#sub tar {
+#    my ($tar_name, $version) = @_;
+#    print qq{\n------------------------------------------------------------\nCREATING TAR\n};
+#    chomp $version;
+#    chomp $tar_name;
+#    $tar_name =~ s/\Alib\///;
+#    $tar_name =~ s/\.pm//xms; # \z prob- use $?!?
+#    #my $module = $tar_name;
+#    #$tar_name =~ s/\//::/g;
+#    $tar_name =~ s/\//-/g;
+#    #my $final = qq{$tar_name-$version};
+#    my $final = $tar_name.q{-}.$version;
+#    #system qq{tar czf ../$tar_name-$version.tar.gz .} and croak qq{\nProblem creating tar file};
+#    #print qq{\n[*] Creating tar: tar czf ../$tar_name-$version.tar.gz ../$tar_name};
+#    # system qq{tar czf ../$tar_name-$version.tar.gz ../$tar_name} and croak qq{\nProblem creating tar file};
+#    print qq{\n[*] BEST TO USE: perl Build.PL; ./Build; ./Build disttest; ./Build dist - dist automatically adds just MANIFEST files to higher level dir in tar so they do not spew out and creates Meta.yml too};
+#    return $final;
+#    # tar_czf_name-0.0.1.tar.gz_dir
+#}
 
-    $tar_name =~ s/\Alib\///;
-    $tar_name =~ s/\.pm//xms; # \z prob- use $?!?
-    #my $module = $tar_name;
-    #$tar_name =~ s/\//::/g;
-    $tar_name =~ s/\//-/g;
-    #my $final = qq{$tar_name-$version};
-    my $final = $tar_name.q{-}.$version;
-    print qq{\n[*] Creating tar: tar czf ../$tar_name-$version.tar.gz ../$tar_name};
-    #system qq{tar czf ../$tar_name-$version.tar.gz .} and croak qq{\nProblem creating tar file};
-    system qq{tar czf ../$tar_name-$version.tar.gz ../$tar_name} and croak qq{\nProblem creating tar file};
-    return $final;
-    # tar_czf_name-0.0.1.tar.gz_dir
+sub build {
+    print qq{\n------------------------------------------------------------\nRUNNING Build distest\n};
+    system q{perl Build.PL; ./Build disttest} and croak qq{\nCould not run test};
+    return;
+}
+
+sub tar {
+    print qq{\n------------------------------------------------------------\nRUNNING Build dist\n};
+    system q{./Build dist} and croak qq{\nCould not tar};
+    return;
 }
 
 #=fs notes

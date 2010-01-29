@@ -5,3 +5,4 @@ Makefile.PL
 README
 lib/Test/ModuleReady.pm
 t/pod.t
+META.yml
